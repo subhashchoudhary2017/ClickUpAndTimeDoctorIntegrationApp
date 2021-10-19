@@ -56,7 +56,7 @@ namespace ClickuUpIntegration
             {
                 endpoints.MapControllerRoute(
                     name: "default",
-                    pattern: "{controller=Team}/{action=GetTeams}/{id?}");
+                    pattern: "{controller=Home}/{action=Login}");
             });
         }
     }

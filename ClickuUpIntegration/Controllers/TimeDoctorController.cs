@@ -26,6 +26,7 @@ namespace ClickUpIntegration.Controllers
             _env = env;
             _httpAccessor = httpAccessor;
         }
+
         public async Task<IActionResult> Authenticate(string username = "", string password = "")
         {
             if (_env.IsDevelopment())
