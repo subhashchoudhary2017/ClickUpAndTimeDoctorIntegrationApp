@@ -29,11 +29,11 @@ namespace ClickUpIntegration.Controllers
 
         public async Task<IActionResult> Authenticate(string username = "", string password = "")
         {
-            if (_env.IsDevelopment())
-            {
-                username = "alpeshkalena123@gmail.com";
-                password = "P@ssword1";
-            }
+            //if (_env.IsDevelopment())
+            //{
+            //    username = "alpeshkalena123@gmail.com";
+            //    password = "P@ssword1";
+            //}
 
 
             var route = "authorization/login";

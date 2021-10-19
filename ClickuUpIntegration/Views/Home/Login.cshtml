@@ -37,8 +37,14 @@
             var password = $("#password").val();
             if (userName.length > 0 && password.length > 0) {
                 $.getJSON("/TimeDoctor/Authenticate?username=" + userName + "&password=" + password, "", function (response) {
-                    if (response.result != null) {
+                    if (response.result != null && response.success) {
                         location.href = "/Team/GetTeams"
+                    }
+                    else if (!response.success) {
+                        alert(response.error.timeDoctorError);
+                    }
+                    else {
+                        alert("Internal server error!!");
                     }
                 });
             }
