@@ -1,0 +1,164 @@
+﻿@model List<ClickUpIntegration.Models.ApiModels.Team>
+@{
+
+}
+<style>
+    ul ul {
+        padding-left: 10px !important;
+    }
+
+    #sidebar {
+        border-right: 2px solid #ccc;
+        min-height: 100vh;
+        max-height: 100%;
+    }
+
+    .detail-type-section {
+        background-color: #000;
+        color: #fff;
+        padding: 5px 10px 8px;
+        text-transform: uppercase;
+        margin:2px;
+    }
+</style>
+<div class="wrapper" style="padding-top:20px;">
+    <!-- Sidebar -->
+    <div class="row">
+        <div class="col-md-3">
+            <nav id="sidebar">
+                <div class="sidebar-header">
+                    @*<h3>Bootstrap Sidebar</h3>*@
+                </div>
+                <ul class="list-unstyled components">
+                    @*<p>Dummy Heading</p>*@
+                    @foreach (var team in Model)
+                    {
+                        <li class="team-section">
+                            <a href="#space_@team.Id" data-toggle="collapse" aria-expanded="true" class="dropdown-toggle" style="color:@team.Color" data-id="@team.Id">@team.Name</a>
+                            <ul class="collapse list-unstyled" id="space_@team.Id">
+                            </ul>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
+        <div class="col-md-9">
+            <div class="task-detail-section row">
+
+            </div>
+        </div>
+    </div>
+</div>
+<script id="SpaceListTemplate" type="text/x-jquery-tmpl">
+    {{each(i, v) spaces}}
+    <li class="space-section">
+        <a href="#space_${v.id}" data-toggle="collapse" aria-expanded="true" class="dropdown-toggle" data-id="${v.id}">${v.name}</a>
+        <ul class="collapse list-unstyled" id="space_${v.id}">
+        </ul>
+    </li>
+    {{/each}}
+</script>
+<script id="FolderListTemplate" type="text/x-jquery-tmpl">
+    {{each(i, v) folders}}
+    <li class="folder-section">
+        <a href="#folder_${v.id}" data-toggle="collapse" aria-expanded="true" class="dropdown-toggle" data-id="${v.id}">${v.name}</a>
+        <ul class="collapse list-unstyled" id="folder_${v.id}">
+        </ul>
+    </li>
+    {{/each}}
+</script>
+<script id="ListTemplate" type="text/x-jquery-tmpl">
+    {{each(i, v) lists}}
+    <li class="list-section">
+        <a href="#list_${v.id}" data-id="${v.id}">${v.name}</a>
+        <ul class="collapse list-unstyled" id="list_${v.id}">
+        </ul>
+    </li>
+    {{/each}}
+</script>
+
+<script id="ListDetailTemplate" type="text/x-jquery-tmpl">
+    {{each(i, v) details}}
+    <a class="col-md-12 detail-type-section dropdown-toggle" href="#Detail_${v.type}" data-toggle="collapse" aria-expanded="true">
+        ${v.type}
+    </a>
+    <div class="collapse" id="Detail_${v.type}">
+        {{each(i, q) v.tasks}}
+        <div class="col-md-12">${q.name}</div>
+        {{/each}}
+    </div>
+    {{/each}}
+</script>
+
+@section scripts{
+    <script>
+        $(".team-section a").on("click", function (e) {
+            var teamId = $(this).attr("data-id");
+            var currEle = $(this);
+            $.getJSON("/Space/GetSpaces?teamId=" + teamId, "", function (response) {
+                if (response.result != null) {
+                    $(currEle).next("ul").empty();
+                    var result = {
+                        spaces: response.result.mySpaces
+                    };
+                    $("#SpaceListTemplate").tmpl(result).appendTo($(currEle).next("ul"));
+                }
+                //else {
+                //    alert("Error");
+                //}
+            });
+        });
+        $(document).on("click", ".space-section a", function (e) {
+            //e.stopImmediatePropagation()
+            var spaceId = $(this).attr("data-id");
+            var currEle = $(this);
+            $.getJSON("/Folder/GetFolders?spaceId=" + spaceId, "", function (response) {
+                if (response.result != null) {
+                    $(currEle).next("ul").empty();
+                    $(currEle).next("ul").addClass("show");
+                    var result = {
+                        folders: response.result.myFolders
+                    };
+                    $("#FolderListTemplate").tmpl(result).appendTo($(currEle).next("ul"));
+                }
+                //else {
+                //    alert("error");
+                //}
+            });
+        });
+
+        $(document).on("click", ".folder-section a", function (e) {
+            var folderId = $(this).attr("data-id");
+            var currEle = $(this);
+            $.getJSON("/List/GetLists?folderId=" + folderId, "", function (response) {
+                if (response.result != null) {
+                    $(currEle).next("ul").empty();
+                    $(currEle).next("ul").addClass("show");
+                    var result = {
+                        lists: response.result.myList
+                    };
+                    $("#ListTemplate").tmpl(result).appendTo($(currEle).next("ul"));
+                }
+            });
+        });
+        $(document).on("click", ".list-section a", function (e) {
+            var listId = $(this).attr("data-id");
+            var currEle = $(this);
+            $.getJSON("/Task/GetTasks?listId=" + listId, "", function (response) {
+                if (response != null) {
+                    $(".task-detail-section.row").empty();
+                    //$(currEle).next("ul").addClass("show");
+                    var result = {
+                        details: response
+                    };
+                    $("#ListDetailTemplate").tmpl(result).appendTo(".task-detail-section.row");
+                }
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log(jqXHR);
+                alert('getJSON request failed! ' + textStatus);
+            });
+        });
+
+    </script>
+}
+
