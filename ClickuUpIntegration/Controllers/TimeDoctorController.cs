@@ -57,6 +57,17 @@ namespace ClickUpIntegration.Controllers
             return Json(response);
         }
 
+        public async Task<IActionResult> Users()
+        {
+            var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
+            var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
+
+            var route = $"users?company={companyId}&token={token}";
+            Response<TimeDoctorUsers> response = await DataHelper<TimeDoctorUsers>.Execute(_baseUrl, route, OperationType.GET);
+
+            return Json(response);
+        }
+
         public async Task<IActionResult> WorkLog(string from, string to)
         {
             var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
