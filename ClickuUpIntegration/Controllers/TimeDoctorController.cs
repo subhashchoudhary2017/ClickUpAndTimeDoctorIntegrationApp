@@ -16,14 +16,11 @@ namespace ClickUpIntegration.Controllers
     public class TimeDoctorController : Controller
     {
         private readonly string _baseUrl;
-        private readonly IWebHostEnvironment _env;
         private readonly IHttpContextAccessor _httpAccessor;
         public TimeDoctorController(IOptions<TimeDoctorApiSettings> timeDoctorApiSettings,
-                                    IWebHostEnvironment env,
                                     IHttpContextAccessor httpAccessor)
         {
             _baseUrl = timeDoctorApiSettings.Value.EndPoint;
-            _env = env;
             _httpAccessor = httpAccessor;
         }
 
@@ -34,13 +31,6 @@ namespace ClickUpIntegration.Controllers
         }
         public async Task<IActionResult> Authenticate(string username = "", string password = "")
         {
-            //if (_env.IsDevelopment())
-            //{
-            //    username = "alpeshkalena123@gmail.com";
-            //    password = "P@ssword1";
-            //}
-
-
             var route = "authorization/login";
             Response<AuthenticateResultModel> response = await DataHelper<AuthenticateResultModel>.Execute(_baseUrl, route, OperationType.POST, new
             {
@@ -52,12 +42,12 @@ namespace ClickUpIntegration.Controllers
             {
                 _httpAccessor.HttpContext.Response.Cookies.Append("timedoctor_accesstoken", response.Result.Data.Token, new CookieOptions
                 {
-                    Expires = DateTime.Now.AddYears(1)
+                    Expires = DateTime.Now.AddMonths(6)
                 });
 
                 _httpAccessor.HttpContext.Response.Cookies.Append("UserId", response.Result.Data.UserId, new CookieOptions
                 {
-                    Expires = DateTime.Now.AddYears(1)
+                    Expires = DateTime.Now.AddMonths(6)
                 });
 
                 var company = response.Result.Data.Companies.FirstOrDefault(s => s.Name == "BladePorts");
@@ -65,32 +55,35 @@ namespace ClickUpIntegration.Controllers
                 {
                     _httpAccessor.HttpContext.Response.Cookies.Append("CompanyId", company.Id, new CookieOptions
                     {
-                        Expires = DateTime.Now.AddYears(1)
+                        Expires = DateTime.Now.AddMonths(6)
                     });
                 }
             }
             return Json(response);
         }
 
-        public async Task<IActionResult> WorkLog(DateTime? from = null, DateTime? to = null)
+        public async Task<IActionResult> Users()
         {
             var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
             var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
-            var userId = _httpAccessor.HttpContext.Request.Cookies["UserId"];
 
-            var fromDate = "";
-            var toDate = "";
-            if (from.HasValue)
-                fromDate = from.Value.ToString("yyyy-MM-ddTHH:mm:ssZ");
-            if (to.HasValue)
-                toDate = to.Value.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            var route = $"users?company={companyId}&token={token}";
+            Response<TimeDoctorUsers> response = await DataHelper<TimeDoctorUsers>.Execute(_baseUrl, route, OperationType.GET);
 
-            var route = $"activity/worklog?token={token}";
-            route += "&company=" + companyId;
-            route += "&from=" + fromDate;
-            route += "&to=" + toDate;
-            route += "&user=" + userId;
+            return Json(response);
+        }
+
+        public async Task<IActionResult> WorkLog(string from, string to)
+        {
+            var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
+            var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
+
+            var route = $"activity/worklog";
+            route += "?company=" + companyId;
+            route += "&from=" + from;
+            route += "&to=" + to;
             route += "&task-project-names=true";
+            route += $"&token={token}";
 
             Response<TimeDoctorWorkLog> response = await DataHelper<TimeDoctorWorkLog>.Execute(_baseUrl, route, OperationType.GET);
 
@@ -162,6 +155,26 @@ namespace ClickUpIntegration.Controllers
 
             return myHou + "hh" + ":" + myMin + "mm" + ":" + mySec + "ss";
 
+        }
+
+        public IActionResult Logout()
+        {
+            _httpAccessor.HttpContext.Response.Cookies.Delete("timedoctor_accesstoken", new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(-1)
+            });
+
+            _httpAccessor.HttpContext.Response.Cookies.Delete("UserId", new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(-1)
+            });
+
+            _httpAccessor.HttpContext.Response.Cookies.Delete("CompanyId", new CookieOptions
+            {
+                Expires = DateTime.Now.AddDays(-1)
+            });
+
+            return RedirectToAction("Login", "Home");
         }
     }
 }
