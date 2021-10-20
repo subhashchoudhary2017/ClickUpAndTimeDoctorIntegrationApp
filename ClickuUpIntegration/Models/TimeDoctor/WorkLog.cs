@@ -44,4 +44,16 @@ namespace ClickUpIntegration.Models.TimeDoctor
         [JsonProperty("deviceId")]
         public string DeviceId { get; set; }
     }
+
+    public class ProjectTask
+    {
+        public string ProjectName { get; set; }
+        public string ProjectId { get; set; }
+        public string TaskName { get; set; }
+        public string TaskId { get; set; }
+        public string TotalHour { get; set; }
+        public int Order { get; set; }
+
+
+    }
 }

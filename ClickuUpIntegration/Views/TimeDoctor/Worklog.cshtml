@@ -1,0 +1,52 @@
+﻿@model List<ClickUpIntegration.Models.TimeDoctor.ProjectTask>
+<style>
+    div.ProjectOrder_0 {
+    }
+
+    div.ProjectOrder_1 {
+        padding-left: 20px;
+    }
+</style>
+<form asp-controller="TimeDoctor" asp-action="WorkLog">
+    <div class="container mt-5">
+        <div class="row mb-5">
+            <div class="col-md-5">
+                <label>From Date:</label>
+                <input type="date" class="form-control" placeholder="From Date" name="from" value="" />
+            </div>
+            <div class="col-md-5">
+                <label>To Date:</label>
+                <input type="date" class="form-control" placeholder="To Date" name="to" value="" />
+            </div>
+            <div class="col-md-2" style="margin-top:30px;">
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <span><b>Project Name</b></span>
+            </div>
+            <div class="col-md-7">
+                <span style="padding-left:20px;"><b>Task Name</b></span>
+            </div>
+            <div class="col-md-2 text-right">
+                <span><b>Total Hour</b></span>
+            </div>
+        </div>
+        @foreach (var prot in Model)
+        {
+            <div class="ProjectOrder_@prot.Order row">
+                <div class="col-md-3">
+                    <span>@prot.ProjectName</span>
+                </div>
+                <div class="col-md-7">
+                    <span>@prot.TaskName</span>
+                </div>
+                <div class="col-md-2 text-right">
+                    <span>@prot.TotalHour</span>
+                </div>
+            </div>
+        }
+    </div>
+</form>
+

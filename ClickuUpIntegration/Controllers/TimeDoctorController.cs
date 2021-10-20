@@ -27,6 +27,11 @@ namespace ClickUpIntegration.Controllers
             _httpAccessor = httpAccessor;
         }
 
+
+        public async Task<IActionResult> Index()
+        {
+            return View();
+        }
         public async Task<IActionResult> Authenticate(string username = "", string password = "")
         {
             //if (_env.IsDevelopment())
@@ -89,7 +94,74 @@ namespace ClickUpIntegration.Controllers
 
             Response<TimeDoctorWorkLog> response = await DataHelper<TimeDoctorWorkLog>.Execute(_baseUrl, route, OperationType.GET);
 
-            return Json(response);
+            var data = response.Result.WorkLog.FirstOrDefault().ToList();
+
+            List<ProjectTask> result = new List<ProjectTask>();
+
+            if (data != null)
+            {
+                var groupByProject = (from d in data
+                                      group d by (d.ProjectId, d.ProjectName) into g
+                                      select new ProjectTask
+                                      {
+                                          ProjectName = g.Key.ProjectName,
+                                          ProjectId = g.Key.ProjectId,
+                                          TaskName = "",
+                                          TaskId="",
+                                          Order = 0,
+                                          TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                      }).ToList();
+
+                var groupByProjectAndTask = (from d in data 
+                                             group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName) into g
+                                             select new ProjectTask
+                                             {
+                                                 ProjectName = g.Key.ProjectName,
+                                                 ProjectId = g.Key.ProjectId,
+                                                 TaskName = g.Key.TaskName,
+                                                 TaskId = g.Key.TaskId,
+                                                 Order = 1,
+                                                 TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                             }).ToList();
+
+                result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x=>x.Order).ToList();
+
+
+            }
+           
+
+            return View(result);
+        }
+        public string ConvertToTime(double timeSeconds)
+
+        {
+            int mySeconds = System.Convert.ToInt32(timeSeconds);
+
+            int myHours = mySeconds / 3600; //3600 Seconds in 1 hour
+
+            mySeconds %= 3600;
+
+
+            int myMinutes = mySeconds / 60; //60 Seconds in a minute
+
+            mySeconds %= 60;
+
+
+            string mySec = mySeconds.ToString(),
+
+            myMin = myMinutes.ToString(),
+
+            myHou = myHours.ToString();
+
+
+            if (myHours < 10) { myHou = myHou.Insert(0, "0"); }
+
+            if (myMinutes < 10) { myMin = myMin.Insert(0, "0"); }
+
+            if (mySeconds < 10) { mySec = mySec.Insert(0, "0"); }
+
+            return myHou + "hh" + ":" + myMin + "mm" + ":" + mySec + "ss";
+
         }
     }
 }
