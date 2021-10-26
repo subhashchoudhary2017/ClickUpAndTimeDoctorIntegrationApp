@@ -356,3 +356,4 @@ D:\ClickuUpIntegration\ClickuUpIntegration\obj\Debug\netcoreapp3.1\ClickUpIntegr
 D:\ClickuUpIntegration\ClickuUpIntegration\obj\Debug\netcoreapp3.1\Razor\Views\Home\Login.cshtml.g.cs
 D:\ClickuUpIntegration\ClickuUpIntegration\obj\Debug\netcoreapp3.1\Razor\Views\TimeDoctor\Index.cshtml.g.cs
 D:\ClickuUpIntegration\ClickuUpIntegration\obj\Debug\netcoreapp3.1\Razor\Views\TimeDoctor\Worklog.cshtml.g.cs
+D:\ClickuUpIntegration\ClickuUpIntegration\obj\Debug\netcoreapp3.1\Razor\Views\Shared\_timeDoctorData.cshtml.g.cs

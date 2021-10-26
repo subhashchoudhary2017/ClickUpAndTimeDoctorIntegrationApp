@@ -62,6 +62,16 @@ namespace ClickUpIntegration.Controllers
             return Json(response);
         }
 
+        public async Task<List<Users>> GetUserList()
+        {
+            var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
+            var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
+
+            var route = $"users?company={companyId}&token={token}";
+            Response<TimeDoctorUsers> response = await DataHelper<TimeDoctorUsers>.Execute(_baseUrl, route, OperationType.GET);
+
+            return response.Result.Users;
+        }
         public async Task<IActionResult> Users()
         {
             var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
@@ -73,58 +83,68 @@ namespace ClickUpIntegration.Controllers
             return Json(response);
         }
 
-        public async Task<IActionResult> WorkLog(string from, string to)
+        public async Task<IActionResult> WorkLog()
         {
-            var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
-            var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
-
-            var route = $"activity/worklog";
-            route += "?company=" + companyId;
-            route += "&from=" + from;
-            route += "&to=" + to;
-            route += "&task-project-names=true";
-            route += $"&token={token}";
-
-            Response<TimeDoctorWorkLog> response = await DataHelper<TimeDoctorWorkLog>.Execute(_baseUrl, route, OperationType.GET);
-
-            var data = response.Result.WorkLog.FirstOrDefault().ToList();
-
-            List<ProjectTask> result = new List<ProjectTask>();
-
-            if (data != null)
-            {
-                var groupByProject = (from d in data
-                                      group d by (d.ProjectId, d.ProjectName) into g
-                                      select new ProjectTask
-                                      {
-                                          ProjectName = g.Key.ProjectName,
-                                          ProjectId = g.Key.ProjectId,
-                                          TaskName = "",
-                                          TaskId="",
-                                          Order = 0,
-                                          TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                      }).ToList();
-
-                var groupByProjectAndTask = (from d in data 
-                                             group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName) into g
-                                             select new ProjectTask
-                                             {
-                                                 ProjectName = g.Key.ProjectName,
-                                                 ProjectId = g.Key.ProjectId,
-                                                 TaskName = g.Key.TaskName,
-                                                 TaskId = g.Key.TaskId,
-                                                 Order = 1,
-                                                 TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                             }).ToList();
-
-                result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x=>x.Order).ToList();
-
-
-            }
-           
-
-            return View(result);
+            ViewBag.Users = await GetUserList();
+            return View();
         }
+
+    public async Task<IActionResult> GetTimeDoctorData(string from, string to, string userId)
+    {
+        var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
+        var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
+
+        var route = $"activity/worklog";
+        route += "?company=" + companyId;
+        if (!string.IsNullOrEmpty(userId))
+            route += "&user=" + userId;
+
+        if (!string.IsNullOrEmpty(from))
+            route += "&from=" + from;
+
+        if (!string.IsNullOrEmpty(from))
+            route += "&to=" + to;
+
+        route += "&task-project-names=true";
+        route += $"&token={token}";
+
+        Response<TimeDoctorWorkLog> response = await DataHelper<TimeDoctorWorkLog>.Execute(_baseUrl, route, OperationType.GET);
+
+        var data = response.Result.WorkLog.FirstOrDefault().ToList();
+
+        List<ProjectTask> result = new List<ProjectTask>();
+
+        if (data != null)
+        {
+            var groupByProject = (from d in data
+                                  group d by (d.ProjectId, d.ProjectName) into g
+                                  select new ProjectTask
+                                  {
+                                      ProjectName = g.Key.ProjectName,
+                                      ProjectId = g.Key.ProjectId,
+                                      TaskName = "",
+                                      TaskId = "",
+                                      Order = 0,
+                                      TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                  }).ToList();
+
+            var groupByProjectAndTask = (from d in data
+                                         group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName) into g
+                                         select new ProjectTask
+                                         {
+                                             ProjectName = g.Key.ProjectName,
+                                             ProjectId = g.Key.ProjectId,
+                                             TaskName = g.Key.TaskName,
+                                             TaskId = g.Key.TaskId,
+                                             Order = 1,
+                                             TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                         }).ToList();
+
+            result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
+
+        }
+         return PartialView("_timeDoctorData", result);
+    }
         public string ConvertToTime(double timeSeconds)
 
         {

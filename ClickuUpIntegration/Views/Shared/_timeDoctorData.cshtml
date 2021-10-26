@@ -1,0 +1,16 @@
+﻿@model List<ClickUpIntegration.Models.TimeDoctor.ProjectTask>
+
+@foreach (var prot in Model)
+{
+    <div class="ProjectOrder_@prot.Order row">
+        <div class="col-md-3">
+            <span>@prot.ProjectName</span>
+        </div>
+        <div class="col-md-7">
+            <span>@prot.TaskName</span>
+        </div>
+        <div class="col-md-2 text-right">
+            <span>@prot.TotalHour</span>
+        </div>
+    </div>
+}

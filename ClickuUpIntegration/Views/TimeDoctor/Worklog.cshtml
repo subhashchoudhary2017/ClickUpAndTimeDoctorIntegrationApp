@@ -1,4 +1,4 @@
-﻿@model List<ClickUpIntegration.Models.TimeDoctor.ProjectTask>
+﻿
 <style>
     div.ProjectOrder_0 {
     }
@@ -15,33 +15,44 @@
         </div>
     </nav>
 </header>
-<form asp-controller="TimeDoctor" asp-action="WorkLog">
-    <div class="container mt-5">
-        <div class="row mb-5">
-            <div class="col-md-5">
-                <label>From Date:</label>
-                <input type="date" class="form-control" placeholder="From Date" name="from" value="" />
-            </div>
-            <div class="col-md-5">
-                <label>To Date:</label>
-                <input type="date" class="form-control" placeholder="To Date" name="to" value="" />
-            </div>
-            <div class="col-md-2" style="margin-top:30px;">
-                <button type="submit" class="btn btn-primary">Search</button>
-            </div>
+<div class="container mt-5">
+    <div class="row mb-5">
+        <div class="col-md-3">
+            <label>From Date:</label>
+            <input type="date" class="form-control" placeholder="From Date" id="from" name="from" value="" />
         </div>
-        <div class="row">
-            <div class="col-md-3">
-                <span><b>Project Name</b></span>
-            </div>
-            <div class="col-md-7">
-                <span style="padding-left:20px;"><b>Task Name</b></span>
-            </div>
-            <div class="col-md-2 text-right">
-                <span><b>Total Hour</b></span>
-            </div>
+        <div class="col-md-3">
+            <label>To Date:</label>
+            <input type="date" class="form-control" placeholder="To Date" id="to" name="to" value="" />
         </div>
-        @foreach (var prot in Model)
+        <div class="col-md-3">
+            <label>Select Users</label>
+            <select class="form-control" name="userId" id="userId">
+                <option>--Select Users--</option>
+                @foreach (var user in ViewBag.Users)
+                {
+                    <option value="@user.Id">@user.Email</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3" style="margin-top:30px;">
+            <button type="button" class="btn btn-primary" id="searchBtn">Search</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            <span><b>Project Name</b></span>
+        </div>
+        <div class="col-md-7">
+            <span style="padding-left:20px;"><b>Task Name</b></span>
+        </div>
+        <div class="col-md-2 text-right">
+            <span><b>Total Hour</b></span>
+        </div>
+    </div>
+    <div id="data-section">
+    </div>
+    @*@foreach (var prot in Model)
         {
             <div class="ProjectOrder_@prot.Order row">
                 <div class="col-md-3">
@@ -54,7 +65,30 @@
                     <span>@prot.TotalHour</span>
                 </div>
             </div>
-        }
-    </div>
-</form>
-
+        }*@
+</div>
+@section scripts{
+    <script>
+        $(document).on("click", "#searchBtn", function (e) {
+            var fromDate = $("#from").val();
+            var toDate = $("#to").val();
+            var userId = $("#userId").val();
+            $.ajax({
+                url: "/TimeDoctor/GetTimeDoctorData?from=" + fromDate + " &to=" + toDate + "&userId=" + userId,
+                type: 'GET',
+                cache: false,
+                async: true,
+            }).done(function (response) {
+                debugger;
+                $("#data-section").html(response);
+            }).fail(function (xhr) {
+                console.log('error : ' + xhr.status + ' - ' + xhr.statusText + ' - ' + xhr.responseText);
+            });
+            //$.getJSON("/TimeDoctor/GetTimeDoctorData?from=" + fromDate + "&to=" + toDate + "&userId=" + userId, "", function (response) {
+            //    if (response != null) {
+            //        $("#data-section").html(response);
+            //    }
+            //});
+        });
+    </script>
+}
