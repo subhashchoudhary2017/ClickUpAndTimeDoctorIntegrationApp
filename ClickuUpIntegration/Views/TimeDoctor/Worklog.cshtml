@@ -16,26 +16,40 @@
     </nav>
 </header>
 <div class="container mt-5">
-    <div class="row mb-5">
-        <div class="col-md-3">
+    <div class="row mb-2">
+        <div class="col-md-6">
             <label>From Date:</label>
             <input type="date" class="form-control" placeholder="From Date" id="from" name="from" value="" />
         </div>
-        <div class="col-md-3">
+        <div class="col-md-6">
             <label>To Date:</label>
             <input type="date" class="form-control" placeholder="To Date" id="to" name="to" value="" />
         </div>
-        <div class="col-md-3">
-            <label>Select Users</label>
+    </div>
+    <div class="row mb-2">
+        <div class="col-md-6">
+            <label>Select User</label>
             <select class="form-control" name="userId" id="userId">
-                <option>--Select Users--</option>
+                <option value="">--Select User--</option>
                 @foreach (var user in ViewBag.Users)
                 {
                     <option value="@user.Id">@user.Email</option>
                 }
             </select>
         </div>
-        <div class="col-md-3" style="margin-top:30px;">
+        <div class="col-md-6">
+            <label>Select Project</label>
+            <select class="form-control" name="userId" id="projectId">
+                <option value="">--Select Project--</option>
+                @foreach (var project in ViewBag.Projects)
+                {
+                    <option value="@project.Name">@project.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-md-12" style="margin-top:30px; text-align:center;">
             <button type="button" class="btn btn-primary" id="searchBtn">Search</button>
         </div>
     </div>
@@ -73,8 +87,9 @@
             var fromDate = $("#from").val();
             var toDate = $("#to").val();
             var userId = $("#userId").val();
+            var projectName = $("#projectId").val(); 
             $.ajax({
-                url: "/TimeDoctor/GetTimeDoctorData?from=" + fromDate + " &to=" + toDate + "&userId=" + userId,
+                url: "/TimeDoctor/GetTimeDoctorData?from=" + fromDate + " &to=" + toDate + "&userId=" + userId + "&projectName=" + projectName,
                 type: 'GET',
                 cache: false,
                 async: true,

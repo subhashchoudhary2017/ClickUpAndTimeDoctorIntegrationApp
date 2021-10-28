@@ -72,6 +72,15 @@ namespace ClickUpIntegration.Controllers
 
             return response.Result.Users;
         }
+
+        public async Task<List<Project>> GetProjectList()
+        {
+            var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
+            var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
+            var route = $"projects?company={companyId}&token={token}&all=true&show-integration=true";
+            Response<TimeDoctorProjects> response = await DataHelper<TimeDoctorProjects>.Execute(_baseUrl, route, OperationType.GET);
+            return response.Result.Projects;
+        }
         public async Task<IActionResult> Users()
         {
             var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
@@ -86,10 +95,11 @@ namespace ClickUpIntegration.Controllers
         public async Task<IActionResult> WorkLog()
         {
             ViewBag.Users = await GetUserList();
+            ViewBag.Projects = await GetProjectList();
             return View();
         }
 
-    public async Task<IActionResult> GetTimeDoctorData(string from, string to, string userId)
+    public async Task<IActionResult> GetTimeDoctorData(string from, string to, string userId, string projectName)
     {
         var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
         var companyId = _httpAccessor.HttpContext.Request.Cookies["CompanyId"];
@@ -141,6 +151,11 @@ namespace ClickUpIntegration.Controllers
                                          }).ToList();
 
             result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
+
+            if (!string.IsNullOrEmpty(projectName))
+            {
+                    result = result.Where(x => (projectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
+            }
 
         }
          return PartialView("_timeDoctorData", result);

@@ -23,4 +23,18 @@ namespace ClickUpIntegration.Models.TimeDoctor
         [JsonProperty("email")]
         public string Email { get; set; }
     }
+
+    public class TimeDoctorProjects
+    {
+        [JsonProperty("data")]
+        public List<Project> Projects { get; set; }
+    }
+    public class Project
+    {
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("description")]
+        public string Description { get; set; }
+    }
 }
