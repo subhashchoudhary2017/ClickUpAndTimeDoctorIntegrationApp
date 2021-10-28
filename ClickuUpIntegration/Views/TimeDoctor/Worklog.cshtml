@@ -18,6 +18,18 @@
 <div class="container mt-5">
     <div class="row mb-2">
         <div class="col-md-6">
+            <label>Select Company</label>
+            <select class="form-control" name="companyId" id="companyId">
+                <option value="">--Select Company--</option>
+                @foreach (var company in ViewBag.Companies)
+                {
+                    <option value="@company.Id">@company.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row mb-2">
+        <div class="col-md-6">
             <label>From Date:</label>
             <input type="date" class="form-control" placeholder="From Date" id="from" name="from" value="" />
         </div>
@@ -31,20 +43,13 @@
             <label>Select User</label>
             <select class="form-control" name="userId" id="userId">
                 <option value="">--Select User--</option>
-                @foreach (var user in ViewBag.Users)
-                {
-                    <option value="@user.Id">@user.Email</option>
-                }
+
             </select>
         </div>
         <div class="col-md-6">
             <label>Select Project</label>
-            <select class="form-control" name="userId" id="projectId">
+            <select class="form-control" name="projectId" id="projectId">
                 <option value="">--Select Project--</option>
-                @foreach (var project in ViewBag.Projects)
-                {
-                    <option value="@project.Name">@project.Name</option>
-                }
             </select>
         </div>
     </div>
@@ -87,23 +92,48 @@
             var fromDate = $("#from").val();
             var toDate = $("#to").val();
             var userId = $("#userId").val();
-            var projectName = $("#projectId").val(); 
+            var projectName = $("#projectId").val();
+            var companyId = $("#companyId").val();
             $.ajax({
-                url: "/TimeDoctor/GetTimeDoctorData?from=" + fromDate + " &to=" + toDate + "&userId=" + userId + "&projectName=" + projectName,
+                url: "/TimeDoctor/GetTimeDoctorData?from=" + fromDate + " &to=" + toDate + "&userId=" + userId + "&projectName=" + projectName + "&companyId=" + companyId,
                 type: 'GET',
                 cache: false,
                 async: true,
             }).done(function (response) {
-                debugger;
                 $("#data-section").html(response);
             }).fail(function (xhr) {
                 console.log('error : ' + xhr.status + ' - ' + xhr.statusText + ' - ' + xhr.responseText);
             });
-            //$.getJSON("/TimeDoctor/GetTimeDoctorData?from=" + fromDate + "&to=" + toDate + "&userId=" + userId, "", function (response) {
-            //    if (response != null) {
-            //        $("#data-section").html(response);
-            //    }
-            //});
+
+        });
+
+        $(document).on("change", "#companyId", function (e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            if ($("#companyId").val() === "") {
+                $("#projectId").empty();
+                $("#projectId").append("<option value=''>--Select Project--</option>");
+
+                $("#userId").empty();
+                $("#userId").append("<option value=''>--Select User--</option>");
+                return false;
+            }
+
+            $.getJSON("/TimeDoctor/GetDropdowns?companyId=" + $("#companyId").val(), "", function (response) {
+
+                $("#userId").empty();
+                $("#userId").append("<option value=''>--Select User--</option>");
+                $.each(response.users, function (i, v) {
+                    $("#userId").append("<option value='" + v.id + "'>" + v.name + "</option>")
+                });
+
+                $("#projectId").empty();
+                $("#projectId").append("<option value=''>--Select Project--</option>");
+                $.each(response.projects, function (i, v) {
+                    $("#projectId").append("<option value='" + v.name + "'>" + v.name + "</option>")
+                });
+            });
         });
     </script>
 }
