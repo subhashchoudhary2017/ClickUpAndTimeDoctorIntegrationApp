@@ -25,6 +25,8 @@ namespace ClickUpIntegration.Models.TimeDoctor
 
         [JsonProperty("token")]
         public string Token { get; set; }
+        [JsonProperty("expiresAt")]
+        public string ExpireAt { get; set; }
 
         [JsonProperty("companies")]
         public List<Company> Companies { get; set; }

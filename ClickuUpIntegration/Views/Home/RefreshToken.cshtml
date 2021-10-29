@@ -1,0 +1,60 @@
+﻿<style>
+    .container {
+        max-width: 500px;
+        border: 2px solid #cccccc4d;
+        padding: 10px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        -ms-transform: translateX(-50%) translateY(-50%);
+        -webkit-transform: translate(-50%,-50%);
+        transform: translate(-50%,-50%);
+    }
+</style>
+<div class="container">
+    <form id="login-form">
+        <div class="text-center">
+            <h5 class="text-uppercase">Refresh Token</h5>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <label>Token Object  : </label>
+                    <textarea id="tokenObj" name="tokenObj" class="form-control" cols="3" rows="5" placeholder="Please enter token object which will get from time doctor api" required></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="mt-3 text-center">
+            <button class="btn btn-primary text-uppercase align-items-center" id="saveToken" type="button">Save</button>
+        </div>
+    </form>
+</div>
+
+@section Scripts{
+    <script>
+        $(document).on("click", "#saveToken", function () {
+            var token = $("#tokenObj").val();
+            if (token.length > 0) {
+                var data = {
+                    result: token
+                };
+
+                $.post("/Home/SaveToken", data, function (response) {
+                    if (response.success) {
+                        location.href = "/TimeDoctor/WorkLog"
+                    }
+                    else if (!response.success) {
+                        alert(response.message);
+                    }
+                    else {
+                        alert("Internal server error!!");
+                    }
+                });
+            }
+            else {
+                alert("Enter token details.")
+            }
+
+        });
+    </script>
+}

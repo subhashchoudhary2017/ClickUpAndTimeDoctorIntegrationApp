@@ -10,7 +10,7 @@
 <header>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
         <div class="container">
-            <a></a>
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="RefreshToken">Refresh Token</a>
             <a class="navbar-brand" asp-area="" asp-controller="TimeDoctor" asp-action="Logout">Logout</a>
         </div>
     </nav>
@@ -137,6 +137,7 @@
                 }
                 $("#data-section").html(response);
             }).fail(function (xhr) {
+                alert('error : Either token expired or something went wrong' + xhr.status + ' - ' + xhr.statusText + ' - ' + xhr.responseText);
                 console.log('error : ' + xhr.status + ' - ' + xhr.statusText + ' - ' + xhr.responseText);
             });
 
@@ -156,19 +157,25 @@
             }
 
             $.getJSON("/TimeDoctor/GetDropdowns?companyId=" + $("#companyId").val(), "", function (response) {
+                
+                if (response.success) {
+                    $("#userId").empty();
+                    $("#userId").append("<option value=''>--Select User--</option>");
+                    users = response.result.users;
+                    $.each(response.result.users, function (i, v) {
+                        $("#userId").append("<option value='" + v.id + "'>" + v.name + "</option>")
+                    });
 
-                $("#userId").empty();
-                $("#userId").append("<option value=''>--Select User--</option>");
-                users = response.users;
-                $.each(response.users, function (i, v) {
-                    $("#userId").append("<option value='" + v.id + "'>" + v.name + "</option>")
-                });
+                    $("#projectId").empty();
+                    $("#projectId").append("<option value=''>--Select Project--</option>");
+                    $.each(response.result.projects, function (i, v) {
+                        $("#projectId").append("<option value='" + v.name + "'>" + v.name + "</option>")
+                    });
+                }
+                else {
+                    alert(response.message);
+                }
 
-                $("#projectId").empty();
-                $("#projectId").append("<option value=''>--Select Project--</option>");
-                $.each(response.projects, function (i, v) {
-                    $("#projectId").append("<option value='" + v.name + "'>" + v.name + "</option>")
-                });
             });
         });
     </script>

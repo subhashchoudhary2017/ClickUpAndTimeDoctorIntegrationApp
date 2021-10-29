@@ -45,19 +45,19 @@ namespace ClickUpIntegration.Controllers
             {
                 _httpAccessor.HttpContext.Response.Cookies.Append("timedoctor_accesstoken", response.Result.Data.Token, new CookieOptions
                 {
-                    Expires = DateTime.Now.AddMonths(6)
+                    Expires = DateTime.Parse(response.Result.Data.ExpireAt)
                 });
 
                 _httpAccessor.HttpContext.Response.Cookies.Append("UserId", response.Result.Data.UserId, new CookieOptions
                 {
-                    Expires = DateTime.Now.AddMonths(6)
+                    Expires = DateTime.Parse(response.Result.Data.ExpireAt)
                 });
 
                 var companiesAsString = JsonConvert.SerializeObject(response.Result.Data.Companies);
 
                 _httpAccessor.HttpContext.Response.Cookies.Append("Companies", companiesAsString, new CookieOptions
                 {
-                    Expires = DateTime.Now.AddMonths(6)
+                    Expires = DateTime.Parse(response.Result.Data.ExpireAt)
                 });
 
                 var company = response.Result.Data.Companies.FirstOrDefault(s => s.Name == "BladePorts");
@@ -65,7 +65,7 @@ namespace ClickUpIntegration.Controllers
                 {
                     _httpAccessor.HttpContext.Response.Cookies.Append("CompanyId", company.Id, new CookieOptions
                     {
-                        Expires = DateTime.Now.AddMonths(6)
+                        Expires = DateTime.Parse(response.Result.Data.ExpireAt)
                     });
                 }
             }
@@ -118,12 +118,16 @@ namespace ClickUpIntegration.Controllers
 
         public async Task<IActionResult> GetDropdowns(string companyId)
         {
+            var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
+            if (string.IsNullOrEmpty(token))
+                return Json(new { Success = false, Result = "", Message = "Token is expired!!!" });
+
             var result = new
             {
                 Projects = await GetProjectListByCompany(companyId),
                 Users = await GetUserListByCompany(companyId),
             };
-            return Json(result);
+            return Json(new { Result = result, Success = true, Message = "" });
         }
 
         [HttpPost]
@@ -276,7 +280,7 @@ namespace ClickUpIntegration.Controllers
                                               TotalHour = ConvertToTime(g.Sum(x => x.Time)),
                                           }).ToList();
 
-                var abc = groupByTask.Union(groupByTaskAndUser).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ThenBy(s=>s.TaskName).ToList();
+                var abc = groupByTask.Union(groupByTaskAndUser).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ThenBy(s => s.TaskName).ToList();
 
                 workLogByUsers.Add(new WorkLogByUser
                 {
