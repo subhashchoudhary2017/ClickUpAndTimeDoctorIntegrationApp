@@ -4,6 +4,7 @@ using ClickUpIntegration.Settings;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums;
 
 namespace ClickUpIntegration.Controllers
 {
@@ -102,7 +104,16 @@ namespace ClickUpIntegration.Controllers
         public IActionResult WorkLog()
         {
             ViewBag.Companies = JsonConvert.DeserializeObject<List<Company>>(_httpAccessor.HttpContext.Request.Cookies["Companies"]);
+            ViewBag.GroupByTypes = GetGroupByType();
             return View();
+        }
+
+        private List<SelectListItem> GetGroupByType()
+        {
+            var groupByType = Enum.GetValues(typeof(GroupByTypeEnum)).Cast<GroupByTypeEnum>()
+                     .Select(x => new SelectListItem { Text = TimeDoctorEnums.GetEnumDescription(x), Value = ((int)x).ToString() }).ToList();
+
+            return groupByType;
         }
 
         public async Task<IActionResult> GetDropdowns(string companyId)
@@ -110,70 +121,171 @@ namespace ClickUpIntegration.Controllers
             var result = new
             {
                 Projects = await GetProjectListByCompany(companyId),
-                Users = await GetUserListByCompany(companyId)
+                Users = await GetUserListByCompany(companyId),
             };
             return Json(result);
         }
 
-        public async Task<IActionResult> GetTimeDoctorData(string from, string to, string userId, string projectName, string companyId)
+        [HttpPost]
+        public async Task<IActionResult> GetTimeDoctorData(WorkLogFilterDto input)
         {
             var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
 
             var route = $"activity/worklog";
-            route += "?company=" + companyId;
-            if (!string.IsNullOrEmpty(userId))
-                route += "&user=" + userId;
+            route += "?company=" + input.CompanyId;
+            if (!string.IsNullOrEmpty(input.UserId))
+                route += "&user=" + input.UserId;
 
-            if (!string.IsNullOrEmpty(from))
-                route += "&from=" + from;
+            if (!string.IsNullOrEmpty(input.From))
+                route += "&from=" + input.From;
 
-            if (!string.IsNullOrEmpty(from))
-                route += "&to=" + to;
+            if (!string.IsNullOrEmpty(input.To))
+                route += "&to=" + input.To;
 
             route += "&task-project-names=true";
             route += $"&token={token}";
 
             Response<TimeDoctorWorkLog> response = await DataHelper<TimeDoctorWorkLog>.Execute(_baseUrl, route, OperationType.GET);
 
-            var data = response.Result.WorkLog.FirstOrDefault().ToList();
+            var users = await GetUserListByCompany(input.CompanyId);
 
-            List<ProjectTask> result = new List<ProjectTask>();
 
-            if (data != null)
+            List<WorkLogByUser> workLogByUsers = new List<WorkLogByUser>();
+
+            if (input.GroupByType == (int)GroupByTypeEnum.GroupByTask || input.GroupByType == (int)GroupByTypeEnum.GroupByUser)
             {
-                var groupByProject = (from d in data
-                                      group d by (d.ProjectId, d.ProjectName) into g
-                                      select new ProjectTask
-                                      {
-                                          ProjectName = g.Key.ProjectName,
-                                          ProjectId = g.Key.ProjectId,
-                                          TaskName = "",
-                                          TaskId = "",
-                                          Order = 0,
-                                          TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                      }).ToList();
-
-                var groupByProjectAndTask = (from d in data
-                                             group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName) into g
-                                             select new ProjectTask
-                                             {
-                                                 ProjectName = g.Key.ProjectName,
-                                                 ProjectId = g.Key.ProjectId,
-                                                 TaskName = g.Key.TaskName,
-                                                 TaskId = g.Key.TaskId,
-                                                 Order = 1,
-                                                 TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                             }).ToList();
-
-                result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
-
-                if (!string.IsNullOrEmpty(projectName))
+                foreach (var item in response.Result.WorkLog.Where(s => s.Count > 0))
                 {
-                    result = result.Where(x => (projectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
-                }
+                    var dataWithUserName = (from i in item
+                                            join u in users on i.UserId equals u.Id into xyz
+                                            from s in xyz.DefaultIfEmpty()
+                                            select new WorkLog
+                                            {
+                                                Date = i.Date,
+                                                DeviceId = i.DeviceId,
+                                                Mode = i.Mode,
+                                                ProjectId = i.ProjectId,
+                                                ProjectName = i.ProjectName,
+                                                Start = i.Start,
+                                                TaskId = i.TaskId,
+                                                TaskName = i.TaskName,
+                                                Time = i.Time,
+                                                UserId = i.UserId,
+                                                UserName = s == null ? "" : s.Name,
+                                            }).ToList();
 
+                    var userName = dataWithUserName.FirstOrDefault()?.UserName;
+
+                    var groupByProject = (from d in dataWithUserName
+                                          group d by (d.ProjectId, d.ProjectName) into g
+                                          select new ProjectTask
+                                          {
+                                              ProjectName = g.Key.ProjectName,
+                                              ProjectId = g.Key.ProjectId,
+                                              TaskName = "",
+                                              TaskId = "",
+                                              Order = 0,
+                                              TotalTimeSpentInProject = g.Sum(x => x.Time),
+                                              TotalHour = ConvertToTime(g.Sum(x => x.Time))
+                                          }).ToList();
+
+                    var totalTimeSpent = ConvertToTime(groupByProject.Select(s => s.TotalTimeSpentInProject).Sum());
+
+                    var groupByProjectAndTask = (from d in dataWithUserName
+                                                 group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName) into g
+                                                 select new ProjectTask
+                                                 {
+                                                     ProjectName = "",
+                                                     ProjectId = g.Key.ProjectId,
+                                                     TaskName = g.Key.TaskName,
+                                                     TaskId = g.Key.TaskId,
+                                                     Order = 1,
+                                                     TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                                 }).ToList();
+
+
+
+                    var result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
+
+                    if (!string.IsNullOrEmpty(input.ProjectName))
+                    {
+                        result = result.Where(x => (input.ProjectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
+                    }
+
+                    if (!string.IsNullOrEmpty(userName))
+                    {
+                        workLogByUsers.Add(new WorkLogByUser
+                        {
+                            UserName = userName,
+                            TotalUserTime = totalTimeSpent,
+                            GroupByType = input.GroupByType,
+                            UserData = result
+                        });
+                    }
+                }
             }
-            return PartialView("_timeDoctorData", result);
+            else
+            {
+                List<WorkLog> workLogs = new List<WorkLog>();
+                foreach (var item in response.Result.WorkLog.Where(s => s.Count > 0))
+                {
+                    var data = (from i in item
+                                join u in users on i.UserId equals u.Id into xyz
+                                from s in xyz.DefaultIfEmpty()
+                                select new WorkLog
+                                {
+                                    Date = i.Date,
+                                    DeviceId = i.DeviceId,
+                                    Mode = i.Mode,
+                                    ProjectId = i.ProjectId,
+                                    ProjectName = i.ProjectName,
+                                    Start = i.Start,
+                                    TaskId = i.TaskId,
+                                    TaskName = i.TaskName,
+                                    Time = i.Time,
+                                    UserId = i.UserId,
+                                    UserName = s == null ? "" : s.Name,
+                                }).ToList();
+
+                    workLogs.AddRange(data);
+
+                }
+                var groupByTask = (from d in workLogs
+                                   group d by (d.ProjectId, d.ProjectName) into g
+                                   select new ProjectTask
+                                   {
+                                       ProjectName = g.Key.ProjectName,
+                                       ProjectId = g.Key.ProjectId,
+                                       TaskName = "",
+                                       TaskId = "",
+                                       Order = 0,
+                                       TotalHour = ConvertToTime(g.Sum(x => x.Time))
+                                   }).ToList();
+
+                var groupByTaskAndUser = (from d in workLogs
+                                          group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName, d.UserId, d.UserName) into g
+                                          select new ProjectTask
+                                          {
+                                              ProjectName = "",
+                                              ProjectId = g.Key.ProjectId,
+                                              TaskName = g.Key.TaskName,
+                                              TaskId = g.Key.TaskId,
+                                              UserId = g.Key.UserId,
+                                              UserName = g.Key.UserName,
+                                              Order = 1,
+                                              TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                          }).ToList();
+
+                var abc = groupByTask.Union(groupByTaskAndUser).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ThenBy(s=>s.TaskName).ToList();
+
+                workLogByUsers.Add(new WorkLogByUser
+                {
+                    GroupByType = input.GroupByType,
+                    UserData = abc
+                });
+            }
+
+            return PartialView("~/Views/Shared/_WorkLogByUser.cshtml", workLogByUsers);
         }
 
         public string ConvertToTime(double timeSeconds)

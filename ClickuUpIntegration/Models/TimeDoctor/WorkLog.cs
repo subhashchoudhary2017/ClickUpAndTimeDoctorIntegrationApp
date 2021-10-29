@@ -8,6 +8,10 @@ namespace ClickUpIntegration.Models.TimeDoctor
 {
     public class TimeDoctorWorkLog
     {
+        public TimeDoctorWorkLog()
+        {
+            WorkLog = new List<List<WorkLog>>();
+        }
         [JsonProperty("data")]
         public List<List<WorkLog>> WorkLog { get; set; }
     }
@@ -43,6 +47,9 @@ namespace ClickUpIntegration.Models.TimeDoctor
 
         [JsonProperty("deviceId")]
         public string DeviceId { get; set; }
+
+        public string UserName { get; set; }
+        public string TotalTimeSpent { get; set; }
     }
 
     public class ProjectTask
@@ -54,6 +61,9 @@ namespace ClickUpIntegration.Models.TimeDoctor
         public string TotalHour { get; set; }
         public int Order { get; set; }
 
+        public double TotalTimeSpentInProject { get; set; }
 
+        public string UserId { get; set; }
+        public string UserName { get; set; }
     }
 }
