@@ -156,7 +156,7 @@ namespace ClickUpIntegration.Controllers
 
             List<WorkLogByUser> workLogByUsers = new List<WorkLogByUser>();
 
-            if (input.GroupByType == (int)GroupByTypeEnum.GroupByTask || input.GroupByType == (int)GroupByTypeEnum.GroupByUser)
+            if (input.GroupByType == (int)GroupByTypeEnum.GroupByUser)
             {
                 foreach (var item in response.Result.WorkLog.Where(s => s.Count > 0))
                 {
@@ -178,6 +178,99 @@ namespace ClickUpIntegration.Controllers
                                                 UserName = s == null ? "" : s.Name,
                                             }).ToList();
 
+                    if (!string.IsNullOrEmpty(input.ProjectName) && input.ProjectName.Split(',').Length == 1)
+                    {
+                        dataWithUserName = dataWithUserName.Where(x => (input.ProjectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
+                    }
+                    if (!string.IsNullOrEmpty(input.UserId) && input.UserId.Split(',').Length == 1)
+                    {
+                        dataWithUserName = dataWithUserName.Where(x => input.UserId == x.UserId).ToList();
+                    }
+
+                    if (dataWithUserName.Count > 0)
+                    {
+                        var userName = dataWithUserName.FirstOrDefault()?.UserName;
+
+                        var groupByProject = (from d in dataWithUserName
+                                              group d by (d.ProjectId, d.ProjectName) into g
+                                              select new ProjectTask
+                                              {
+                                                  ProjectName = g.Key.ProjectName,
+                                                  ProjectId = g.Key.ProjectId,
+                                                  TaskName = "",
+                                                  TaskId = "",
+                                                  Order = 0,
+                                                  TotalTimeSpentInProject = g.Sum(x => x.Time),
+                                                  TotalHour = ConvertToTime(g.Sum(x => x.Time))
+                                              }).ToList();
+
+                        var totalTimeSpent = ConvertToTime(groupByProject.Select(s => s.TotalTimeSpentInProject).Sum());
+
+                        var groupByProjectAndTask = (from d in dataWithUserName
+                                                     group d by (d.ProjectId, d.ProjectName, d.TaskId, d.TaskName) into g
+                                                     select new ProjectTask
+                                                     {
+                                                         ProjectName = "",
+                                                         ProjectId = g.Key.ProjectId,
+                                                         TaskName = g.Key.TaskName,
+                                                         TaskId = g.Key.TaskId,
+                                                         Order = 1,
+                                                         TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                                     }).ToList();
+
+                        var result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
+
+                        if (!string.IsNullOrEmpty(userName))
+                        {
+                            workLogByUsers.Add(new WorkLogByUser
+                            {
+                                UserName = userName,
+                                TotalUserTime = totalTimeSpent,
+                                GroupByType = input.GroupByType,
+                                UserData = result
+                            });
+                        }
+                    }
+                }
+            }
+            else if (input.GroupByType == (int)GroupByTypeEnum.GroupByTask)
+            {
+                List<WorkLog> dataWithUserName = new List<WorkLog>();
+                foreach (var item in response.Result.WorkLog.Where(s => s.Count > 0))
+                {
+                    var data = (from i in item
+                                join u in users on i.UserId equals u.Id into xyz
+                                from s in xyz.DefaultIfEmpty()
+                                select new WorkLog
+                                {
+                                    Date = i.Date,
+                                    DeviceId = i.DeviceId,
+                                    Mode = i.Mode,
+                                    ProjectId = i.ProjectId,
+                                    ProjectName = i.ProjectName,
+                                    Start = i.Start,
+                                    TaskId = i.TaskId,
+                                    TaskName = i.TaskName,
+                                    Time = i.Time,
+                                    UserId = i.UserId,
+                                    UserName = s == null ? "" : s.Name,
+                                }).ToList();
+
+                    dataWithUserName.AddRange(data);
+
+                }
+
+                if (!string.IsNullOrEmpty(input.ProjectName) && input.ProjectName.Split(',').Length == 1)
+                {
+                    dataWithUserName = dataWithUserName.Where(x => (input.ProjectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
+                }
+                if (!string.IsNullOrEmpty(input.UserId) && input.UserId.Split(',').Length == 1)
+                {
+                    dataWithUserName = dataWithUserName.Where(x => input.UserId == x.UserId).ToList();
+                }
+
+                if (dataWithUserName.Count > 0)
+                {
                     var userName = dataWithUserName.FirstOrDefault()?.UserName;
 
                     var groupByProject = (from d in dataWithUserName
@@ -205,16 +298,10 @@ namespace ClickUpIntegration.Controllers
                                                      TaskId = g.Key.TaskId,
                                                      Order = 1,
                                                      TotalHour = ConvertToTime(g.Sum(x => x.Time)),
+                                                     StrStartDate = g.Key.StrStartDate
                                                  }).ToList();
 
-
-
                     var result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
-
-                    if (!string.IsNullOrEmpty(input.ProjectName))
-                    {
-                        result = result.Where(x => (input.ProjectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
-                    }
 
                     if (!string.IsNullOrEmpty(userName))
                     {
@@ -254,6 +341,16 @@ namespace ClickUpIntegration.Controllers
                     workLogs.AddRange(data);
 
                 }
+
+                if (!string.IsNullOrEmpty(input.ProjectName) && input.ProjectName.Split(',').Length == 1)
+                {
+                    workLogs = workLogs.Where(x => (input.ProjectName.ToLower().IndexOf(x.ProjectName.ToLower()) > -1)).ToList();
+                }
+                if (!string.IsNullOrEmpty(input.UserId) && input.UserId.Split(',').Length == 1)
+                {
+                    workLogs = workLogs.Where(x => input.UserId == x.UserId).ToList();
+                }
+
                 var groupByTask = (from d in workLogs
                                    group d by (d.ProjectId, d.ProjectName) into g
                                    select new ProjectTask
@@ -278,14 +375,16 @@ namespace ClickUpIntegration.Controllers
                                               UserName = g.Key.UserName,
                                               Order = 1,
                                               TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                          }).ToList();
+                                          });
 
-                var abc = groupByTask.Union(groupByTaskAndUser).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ThenBy(s => s.TaskName).ToList();
+                var taskData = groupByTaskAndUser.ToList();
+
+                var result = groupByTask.Union(taskData).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ThenBy(s => s.TaskName).ToList();
 
                 workLogByUsers.Add(new WorkLogByUser
                 {
                     GroupByType = input.GroupByType,
-                    UserData = abc
+                    UserData = result
                 });
             }
 
