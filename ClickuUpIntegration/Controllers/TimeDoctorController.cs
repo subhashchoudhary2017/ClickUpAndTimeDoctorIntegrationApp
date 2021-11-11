@@ -135,16 +135,71 @@ namespace ClickUpIntegration.Controllers
         {
             var token = _httpAccessor.HttpContext.Request.Cookies["timedoctor_accesstoken"];
 
+            List<string> dateRanges = new List<string>();
+
+            List<WorkLogByDates> data = new List<WorkLogByDates>();
+            var day = 15;
+
+            if (!string.IsNullOrEmpty(input.From) && !string.IsNullOrEmpty(input.To))
+            {
+                var newfDate = DateTime.Parse(input.From);
+                var newtDate = DateTime.Parse(input.To);
+
+                var loopCount = Math.Ceiling((newtDate - newfDate).TotalDays / day);
+
+                for (int i = 0; i < loopCount; i++)
+                {
+                    if ((newtDate - newfDate).TotalDays > day)
+                    {
+                        var sDate = newfDate;
+                        var eDate = sDate.AddDays(day);
+
+                        input.From = newfDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                        input.To = eDate.AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+                        data.Add(new WorkLogByDates
+                        {
+                            DateRange = newfDate.ToString("MM/dd/yyyy") + " - " + eDate.AddSeconds(-1).ToString("MM/dd/yyyy"),
+                            WorkLogs = await GetData(input, token)
+                        });
+
+                        newfDate = eDate;
+                    }
+                    else if ((newtDate - newfDate).TotalDays <= day)
+                    {
+                        input.From = newfDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                        input.To = newtDate.AddDays(1).AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+                        data.Add(new WorkLogByDates
+                        {
+                            DateRange = newfDate.ToString("MM/dd/yyyy") + " - " + newtDate.AddDays(1).AddSeconds(-1).ToString("MM/dd/yyyy"),
+                            WorkLogs = await GetData(input, token)
+                        });
+                    }
+                }
+            }
+
+            data = data.Where(s => s.WorkLogs.Any()).ToList();
+
+            return PartialView("~/Views/Shared/_WorkLogByUser.cshtml", data);
+        }
+
+        private async Task<List<WorkLogByUser>> GetData(WorkLogFilterDto input, string token)
+        {
             var route = $"activity/worklog";
             route += "?company=" + input.CompanyId;
             if (!string.IsNullOrEmpty(input.UserId))
                 route += "&user=" + input.UserId;
 
             if (!string.IsNullOrEmpty(input.From))
+            {
                 route += "&from=" + input.From;
+            }
 
             if (!string.IsNullOrEmpty(input.To))
+            {
                 route += "&to=" + input.To;
+            }
 
             route += "&task-project-names=true";
             route += $"&token={token}";
@@ -298,7 +353,6 @@ namespace ClickUpIntegration.Controllers
                                                      TaskId = g.Key.TaskId,
                                                      Order = 1,
                                                      TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                                     StrStartDate = g.Key.StrStartDate
                                                  }).ToList();
 
                     var result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();
@@ -388,7 +442,7 @@ namespace ClickUpIntegration.Controllers
                 });
             }
 
-            return PartialView("~/Views/Shared/_WorkLogByUser.cshtml", workLogByUsers);
+            return workLogByUsers;
         }
 
         public string ConvertToTime(double timeSeconds)
@@ -448,4 +502,13 @@ namespace ClickUpIntegration.Controllers
             return RedirectToAction("Login", "Home");
         }
     }
+}
+public class WorkLogByDates
+{
+    public WorkLogByDates()
+    {
+        WorkLogs = new List<WorkLogByUser>();
+    }
+    public string DateRange { get; set; }
+    public List<WorkLogByUser> WorkLogs { get; set; }
 }
