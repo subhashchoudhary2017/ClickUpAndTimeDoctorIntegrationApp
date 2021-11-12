@@ -1,72 +1,82 @@
-﻿@model List<ClickUpIntegration.Models.TimeDoctor.WorkLogByUser>
+﻿@model List<WorkLogByDates>
 
 
-@foreach (var user in Model)
+@foreach (var item in Model)
 {
-    @if (user.GroupByType == (int)ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums.GroupByTypeEnum.GroupByTask)
-    {
-        @foreach (var prot in user.UserData)
-        {
-            <div class="ProjectOrder_@prot.Order row">
-                <div class="col-md-3">
-                    <span>@prot.ProjectName</span>
-                </div>
-                <div class="col-md-5">
-                    <span>@prot.TaskName</span>
-                </div>
-                <div class="col-md-2 text-right">
-                    <span>@prot.TotalHour</span>
-                </div>
-            </div>
-        }
-    }
-    else if (user.GroupByType == (int)ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums.GroupByTypeEnum.GroupByUser)
-    {
-        <div class="row">
-            <div class="col-md-3">
-                <span>User : @user.UserName</span>
-            </div>
-            <div class="col-md-5">
-                <span></span>
-            </div>
-            <div class="col-md-2 text-right">
-                <span>@user.TotalUserTime</span>
-            </div>
+    <div class="row">
+        <div class="col-md-12">
+            @item.DateRange
         </div>
-        @foreach (var prot in user.UserData)
-        {
-            <div class="ProjectOrder_@prot.Order row">
-                <div class="col-md-3">
-                    <span>@prot.ProjectName</span>
-                </div>
-                <div class="col-md-5">
-                    <span>@prot.TaskName</span>
-                </div>
-                <div class="col-md-2 text-right">
-                    <span>@prot.TotalHour</span>
-                </div>
-            </div>
-        }
-        <br />
-    }
-    else if (user.GroupByType == (int)ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums.GroupByTypeEnum.GroupByTaskAndUser)
+    </div>
+    @foreach (var user in item.WorkLogs)
     {
-        @foreach (var prot in user.UserData)
+        @if (user.GroupByType == (int)ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums.GroupByTypeEnum.GroupByTask)
         {
-            <div class="ProjectOrder_@prot.Order row">
+            @foreach (var prot in user.UserData)
+            {
+                <div class="ProjectOrder_@prot.Order row">
+                    <div class="col-md-3">
+                        <span>@prot.ProjectName</span>
+                    </div>
+                    <div class="col-md-5">
+                        <span>@prot.TaskName</span>
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <span>@prot.TotalHour</span>
+                    </div>
+                </div>
+            }
+        }
+        else if (user.GroupByType == (int)ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums.GroupByTypeEnum.GroupByUser)
+        {
+            <div class="row">
                 <div class="col-md-3">
-                    <span>@prot.ProjectName</span>
+                    <span>User : @user.UserName</span>
                 </div>
                 <div class="col-md-5">
-                    <span>@prot.TaskName</span>
-                </div>
-                <div class="col-md-2">
-                    <span>@prot.UserName</span>
+                    <span></span>
                 </div>
                 <div class="col-md-2 text-right">
-                    <span>@prot.TotalHour</span>
+                    <span>@user.TotalUserTime</span>
                 </div>
             </div>
+            @foreach (var prot in user.UserData)
+            {
+                <div class="ProjectOrder_@prot.Order row">
+                    <div class="col-md-3">
+                        <span>@prot.ProjectName</span>
+                    </div>
+                    <div class="col-md-5">
+                        <span>@prot.TaskName</span>
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <span>@prot.TotalHour</span>
+                    </div>
+                </div>
+            }
+            <br />
+        }
+        else if (user.GroupByType == (int)ClickUpIntegration.Models.TimeDoctor.TimeDoctorEnums.GroupByTypeEnum.GroupByTaskAndUser)
+        {
+            @foreach (var prot in user.UserData)
+            {
+                <div class="ProjectOrder_@prot.Order row">
+                    <div class="col-md-3">
+                        <span>@prot.ProjectName</span>
+                    </div>
+                    <div class="col-md-5">
+                        <span>@prot.TaskName</span>
+                    </div>
+                    <div class="col-md-2">
+                        <span>@prot.UserName</span>
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <span>@prot.TotalHour</span>
+                    </div>
+                </div>
+            }
         }
     }
 }
+
+
