@@ -145,38 +145,89 @@ namespace ClickUpIntegration.Controllers
                 var newfDate = DateTime.Parse(input.From);
                 var newtDate = DateTime.Parse(input.To);
 
-                var loopCount = Math.Ceiling((newtDate - newfDate).TotalDays / day);
+                List<Tuple<DateTime, DateTime>> r = new List<Tuple<DateTime, DateTime>>();
 
-                for (int i = 0; i < loopCount; i++)
+                var startlop = true;
+                while (startlop)
                 {
-                    if ((newtDate - newfDate).TotalDays > day)
+                    var daysInMonth = DateTime.DaysInMonth(newfDate.Year, newfDate.Month);
+                    DateTime endDat = DateTime.Now;
+
+                    if (newfDate.Day <= 15)
                     {
-                        var sDate = newfDate;
-                        var eDate = sDate.AddDays(day);
-
-                        input.From = newfDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
-                        input.To = eDate.AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
-
-                        data.Add(new WorkLogByDates
-                        {
-                            DateRange = newfDate.ToString("MM/dd/yyyy") + " - " + eDate.AddSeconds(-1).ToString("MM/dd/yyyy"),
-                            WorkLogs = await GetData(input, token)
-                        });
-
-                        newfDate = eDate;
+                        endDat = new DateTime(newfDate.Year, newfDate.Month, 15, 23, 59, 59);
                     }
-                    else if ((newtDate - newfDate).TotalDays <= day)
+                    else if(newfDate.Day > 15 && daysInMonth == 31)
                     {
-                        input.From = newfDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
-                        input.To = newtDate.AddDays(1).AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                        endDat = new DateTime(newfDate.Year, newfDate.Month, 31, 23, 59, 59);
+                    }
+                    else if(newfDate.Day > 15 && daysInMonth == 30)
+                    {
+                        endDat = new DateTime(newfDate.Year, newfDate.Month, 30, 23, 59, 59);
+                    }
 
-                        data.Add(new WorkLogByDates
-                        {
-                            DateRange = newfDate.ToString("MM/dd/yyyy") + " - " + newtDate.AddDays(1).AddSeconds(-1).ToString("MM/dd/yyyy"),
-                            WorkLogs = await GetData(input, token)
-                        });
+                    if (newtDate.Date == endDat.Date || newtDate.Date < endDat.Date)
+                    {
+                        r.Add(new Tuple<DateTime, DateTime>(newfDate, newtDate.AddDays(1).AddSeconds(-1)));
+                        startlop = false;
+                    }
+                    else
+                    {
+                        r.Add(new Tuple<DateTime, DateTime>(newfDate, endDat));
+                        newfDate = endDat.AddDays(1).Date;
                     }
                 }
+
+                for (int i = 0; i < r.Count; i++)
+                {
+                    var stDate = r[i].Item1;
+                    var eDate = r[i].Item2;
+
+                    input.From = stDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                    input.To = eDate.AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+                    data.Add(new WorkLogByDates
+                    {
+                        DateRange = stDate.ToString("MM/dd/yyyy") + " - " + eDate.ToString("MM/dd/yyyy"),
+                        WorkLogs = await GetData(input, token)
+                    });
+                }
+
+
+                var loopCount = Math.Ceiling((newtDate - newfDate).TotalDays / day);
+
+                //for (int i = 0; i < loopCount; i++)
+                //{
+
+
+                //    if ((newtDate - newfDate).TotalDays > day)
+                //    {
+                //        var sDate = newfDate;
+                //        var eDate = sDate.AddDays(day);
+
+                //        input.From = newfDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                //        input.To = eDate.AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+                //        data.Add(new WorkLogByDates
+                //        {
+                //            DateRange = newfDate.ToString("MM/dd/yyyy") + " - " + eDate.AddSeconds(-1).ToString("MM/dd/yyyy"),
+                //            WorkLogs = await GetData(input, token)
+                //        });
+
+                //        newfDate = eDate;
+                //    }
+                //    else if ((newtDate - newfDate).TotalDays <= day)
+                //    {
+                //        input.From = newfDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
+                //        input.To = newtDate.AddDays(1).AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+                //        data.Add(new WorkLogByDates
+                //        {
+                //            DateRange = newfDate.ToString("MM/dd/yyyy") + " - " + newtDate.AddDays(1).AddSeconds(-1).ToString("MM/dd/yyyy"),
+                //            WorkLogs = await GetData(input, token)
+                //        });
+                //    }
+                //}
             }
 
             data = data.Where(s => s.WorkLogs.Any()).ToList();
