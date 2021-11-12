@@ -298,7 +298,7 @@ namespace ClickUpIntegration.Controllers
                                                      TaskId = g.Key.TaskId,
                                                      Order = 1,
                                                      TotalHour = ConvertToTime(g.Sum(x => x.Time)),
-                                                     StrStartDate = g.Key.StrStartDate
+                                                     //StrStartDate = g.Key.StrStartDate
                                                  }).ToList();
 
                     var result = groupByProject.Union(groupByProjectAndTask).OrderBy(x => x.ProjectId).ThenBy(x => x.Order).ToList();

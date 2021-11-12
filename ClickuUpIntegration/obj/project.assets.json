@@ -700,11 +700,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\ClickuUpIntegration\\ClickuUpIntegration\\ClickUpIntegration.csproj",
+      "projectUniqueName": "D:\\ClickUpAndTimeDoctorIntegrationApp\\ClickuUpIntegration\\ClickUpIntegration.csproj",
       "projectName": "ClickUpIntegration",
-      "projectPath": "D:\\ClickuUpIntegration\\ClickuUpIntegration\\ClickUpIntegration.csproj",
+      "projectPath": "D:\\ClickUpAndTimeDoctorIntegrationApp\\ClickuUpIntegration\\ClickUpIntegration.csproj",
       "packagesPath": "C:\\Users\\ATUL SHARMA\\.nuget\\packages\\",
-      "outputPath": "D:\\ClickuUpIntegration\\ClickuUpIntegration\\obj\\",
+      "outputPath": "D:\\ClickUpAndTimeDoctorIntegrationApp\\ClickuUpIntegration\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Microsoft\\Xamarin\\NuGet\\",
