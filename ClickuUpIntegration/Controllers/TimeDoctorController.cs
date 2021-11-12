@@ -184,7 +184,7 @@ namespace ClickUpIntegration.Controllers
                     var eDate = r[i].Item2;
 
                     input.From = stDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
-                    input.To = eDate.AddSeconds(-1).ToString("yyyy-MM-ddTHH:mm:ssZ");
+                    input.To = eDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
                     data.Add(new WorkLogByDates
                     {
