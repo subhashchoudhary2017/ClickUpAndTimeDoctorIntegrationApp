@@ -6,15 +6,22 @@
     div.ProjectOrder_1 {
         padding-left: 20px;
     }
+
     div.row.date-row {
         background: #ccc;
         padding: 10px 0px;
     }
+
     div.ProjectOrder_0, div.row.user-row {
         margin-top: 4px;
         font-weight: bold;
     }
+    select.form-control[multiple], select.form-control[size] {
+        height: calc(1.5em + 0.75rem + 2px) !important;
+    }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css" />
+
 <header>
     <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
         <div class="container">
@@ -58,9 +65,8 @@
     <div class="row mb-2">
         <div class="col-md-6">
             <label>Select User</label>
-            <select class="form-control" name="userId" id="userId">
+            <select class="form-control" multiple name="userId" id="userId">
                 <option value="">--Select User--</option>
-
             </select>
         </div>
         <div class="col-md-6">
@@ -110,6 +116,7 @@
     <script>
         var users = [];
         $(document).on("click", "#searchBtn", function (e) {
+            debugger;
             var fromDate = $("#from").val();
             var toDate = $("#to").val();
             var userId = $("#userId").val();
@@ -119,6 +126,9 @@
             if (userId === "") {
                 var userIds = users.map(s => s.id);
                 userId = userIds.join(",");
+            }
+            else {
+                userId = userId.join(",");
             }
 
             var input = {
@@ -144,6 +154,7 @@
                     $("#userNameShowHide").show();
                 }
                 $("#data-section").html(response);
+                $("select").selectpicker();
             }).fail(function (xhr) {
                 alert('error : Either token expired or something went wrong' + xhr.status + ' - ' + xhr.statusText + ' - ' + xhr.responseText);
                 console.log('error : ' + xhr.status + ' - ' + xhr.statusText + ' - ' + xhr.responseText);
@@ -165,7 +176,7 @@
             }
 
             $.getJSON("/TimeDoctor/GetDropdowns?companyId=" + $("#companyId").val(), "", function (response) {
-                
+                debugger;
                 if (response.success) {
                     $("#userId").empty();
                     $("#userId").append("<option value=''>--Select User--</option>");
@@ -179,6 +190,7 @@
                     $.each(response.result.projects, function (i, v) {
                         $("#projectId").append("<option value='" + v.name + "'>" + v.name + "</option>")
                     });
+                    $("select").selectpicker();
                 }
                 else {
                     alert(response.message);
@@ -187,4 +199,6 @@
             });
         });
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+
 }
